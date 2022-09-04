@@ -1,35 +1,63 @@
-# txt2imghd
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github//wakamenori/txt2imghd-colab/blob/master/txt2imghd.ipynb)
 
-txt2imghd is a port of the GOBIG mode from [progrockdiffusion](https://github.com/lowfuel/progrockdiffusion) applied to [Stable Diffusion](https://github.com/CompVis/stable-diffusion), with [Real-ESRGAN](https://github.com/xinntao/Real-ESRGAN) as the upscaler. It creates detailed, higher-resolution images by first generating an image from a prompt, upscaling it, and then running img2img on smaller pieces of the upscaled image, and blending the result back into the original image.
 
-txt2imghd with default settings has the same VRAM requirements as regular Stable Diffusion, although generation of the detailed images will take longer.
+## Introduction
+This notebook is basically a Colab version of [txt2imghd](https://github.com/jquesnelle/txt2imghd) and also NSFW disabled.  
+I take some codes from the original repo and made it work on Colab. It's easy for people who has no coding background to use it.
 
-## Installation
+`txt2imghd` generates high-resolution images using txt2img and img2img.
+> txt2imghd is a port of the GOBIG mode from progrockdiffusion applied to Stable Diffusion, with Real-ESRGAN as the upscaler.  
+> It creates detailed, higher-resolution images by first generating an image from a prompt, upscaling it, and then running img2img on smaller pieces of the upscaled image, and blending the result back into the original image.  
 
-1. Have a working repository of [Stable Diffusion](https://raw.githubusercontent.com/CompVis/stable-diffusion)
-2. Copy `txt2imghd.py` into `scripts/`
-3. Download the appropriate [release of Real-ESRGAN](https://github.com/xinntao/Real-ESRGAN/releases) (the respective `realesrgan-ncnn-vulkan` .zip for your OS) and unzip it into the root of your Stable Diffusion repository
+(quoted from [original repo](https://github.com/jquesnelle/txt2imghd))
 
-## Running
+## How it works
+1. Generate an image from a prompt using txt2img. Or load a image file.
+2. Scale up the image using Real-ESRGAN.
+3. Run img2img on smaller pieces of the up-scaled image.
+4. Blend the result back into the upscaled image.
 
-txt2imghd has most of the same parameters as txt2img. `ddim_steps` has been renamed to `steps`. The `strength` parameter controls how much detailing to do (between 0.0-1.0). If no `prompt` is given on the command line, the program will ask for it as input.
+### Detailed explanation
+#### Step.1 Generate an image from a prompt using txt2img
+> Let's say you generate an image in pixel size of 512x512 using txt2img.
+![Original image](https://github.com/wakamenori/txt2imghd-colab/blob/master/gallery/Original.png?raw=true)
 
-```sh
-python scripts/txt2imghd.py
-```
+#### Step.2 Scale up the image using Real-ESRGAN
+> Scale up the image to 1024x1024.
+![up-scaled](https://github.com/wakamenori/txt2imghd-colab/blob/master/gallery/up-scaled_2x.png?raw=true)
 
-txt2imghd will output three images: the original Stable Diffusion image, the upscaled version (denoted by a `u` suffix), and the detailed version (denoted by the `ud` suffix).
+#### Step.3 Run img2img on smaller pieces of the up-scaled image
+> Chop up-scaled image into slices in pixel size of original image.  
+In this example, up-scaled image will be chopped into 9 images in pixel size of 512x512.  
+Then run img2img on every small images with the same prompt for original image.  
+This process generates more detailed and cleaner images compared to just up scaling the image
+![img2img-1](https://github.com/wakamenori/txt2imghd-colab/blob/master/gallery/slice_img2img.png?raw=true)
+![img2img-2](https://github.com/wakamenori/txt2imghd-colab/blob/master/gallery/slice_img2img(2).png?raw=true)
 
-## Example images
+#### Step4. Blend the result back into the upscaled image.
+> Finally, blend the slices of images back into the upscaled image.  
+![txt2imghd](https://github.com/wakamenori/txt2imghd-colab/blob/master/gallery/up-scaled_2x_img2img.png?raw=true)
+![txt2imghd_diff](https://github.com/wakamenori/txt2imghd-colab/blob/master/gallery/diff.png?raw=true)
+####  Step.3 and Step.4 again
+> If you select `SCALEUP_RATIO` 4x or 8x and checked `SCALEUP_STEP_BY_STEP`, Step.3 and Step.4 runs again.  
+up scale 1024x1024 image to 2048x2048, and chop up-scalled image into 36 pieces then run img2img on every 36 images, then blend them back
 
-[old harbour, tone mapped, shiny, intricate, cinematic lighting, highly detailed, digital painting, artstation, concept art, smooth, sharp focus, illustration, art by terry moore and greg rutkowski and alphonse mucha](gallery/00005ud.png)
+## `CUDA out of memory` try these
+Not to run out memory,
+- Smaller size of the image
+- Lower `SCALEUP_RATIO`
+- Uncheck `FP32`
+- Uncheck `GFPGAN`
 
-[55mm closeup hand photo of a breathtaking majestic beautiful armored redhead woman mage holding a tiny ball of fire in her hand on a snowy night in the village. zoom on the hand. focus on hand. dof. bokeh. art by greg rutkowski and luis royo. ultra reallistic. extremely detailed. nikon d850. cinematic postprocessing.](gallery/00030ud.png)
+## Credits
+Colab
+- [NSFW Disabled: NOP & WAS's Stable Diffusion Colab v0.35 (1.4 Weights)](https://colab.research.google.com/drive/1jUwJ0owjigpG-9m6AI_wEStwimisUE17#scrollTo=Ucr5_i21xSjv)
 
-[a humanoid armored futuristic cybernetic samurai with glowing neon decals, award winning photograph, close up, focused trending on artstation, octane render, portrait, hyperrealistic, ultra detailed, photograph](gallery/00068ud.png)
+Reddit
+- [txt2imghd: Generate high-res images with Stable Diffusion](https://www.reddit.com/r/StableDiffusion/comments/wxm0cf/txt2imghd_generate_highres_images_with_stable/)
 
-[(painting of girl from behind looking a fleet of imperial ships in the sky, in a meadow of flowers. ) by donato giancola and Eddie Mendoza,  elegant, dynamic lighting, beautiful, poster, trending on artstation, poster, anato finnstark, wallpaper, 4 k, award winning, digital art, imperial colors, fantastic view](gallery/00091ud.png)
+Github
+- [txt2imghd](https://github.com/jquesnelle/txt2imghd)
+- [Real-ESRGAN](https://github.com/xinntao/Real-ESRGAN)
+- [GFPGAN](https://github.com/TencentARC/GFPGAN)
 
-[concept art of a far-future city, key visual, summer day, highly detailed, digital painting, artstation, concept art, sharp focus, in harmony with nature, streamlined, by makoto shinkai and akihiko yoshida and hidari and wlop](gallery/00124ud.png)
-
-["female cyborg assimilated by alien fungus", intricate Three-point lighting portrait, by Ching Yeh and Greg Rutkowski, detailed cyberpunk in the style of GitS 1995](gallery/00155ud.png)
